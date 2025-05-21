@@ -1,0 +1,41 @@
+.border-left-4 {
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+
+.dashboard {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+
+.el-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+.el-col {
+  display: flex;
+}
+
+.el-card .text-right .text-4xl {
+  font-size: 2.5rem;  
+  font-weight: bold;  
+  color: #333; 
+}
+
+.el-card .text-right {
+  margin-top: auto;
+  text-align: right;
+}
+
+.dashboard-card {
+  margin-bottom: 24px;
+}
+
+.dashboard-card:last-child {
+  margin-bottom: 0;
+}
+.dashboard-section{
+  margin-top: 15px;
+}
