@@ -1,6 +1,9 @@
+```vue
 <template>
+    <!-- Dialog for updating asset purchase date -->
     <el-dialog :model-value="visible" title="Update Asset Purchase Date" width="50%" @close="resetForm"
         @update:model-value="handleVisibilityChange">
+        <!-- Form for selecting asset and purchase date -->
         <el-form :model="formData" label-position="top" ref="formRef">
             <el-row :gutter="20">
                 <el-col :span="24">
@@ -16,14 +19,15 @@
 
             <el-row :gutter="20">
                 <el-col :span="24">
-                    <el-form-item label="Purchase Date" prop="purchaseDate">
-                        <el-date-picker v-model="formData.purchaseDate" type="date" placeholder="Select date"
+                    <el-form-item label="Purchase Date" prop="purchase_date">
+                        <el-date-picker v-model="formData.purchase_date" type="date" placeholder="Select date"
                             style="width: 100%" />
                     </el-form-item>
                 </el-col>
             </el-row>
         </el-form>
 
+        <!-- Dialog footer with action buttons -->
         <template #footer>
             <span class="dialog-footer">
                 <el-button @click="close">Cancel</el-button>
@@ -39,6 +43,7 @@
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 
+// Define component props
 const props = defineProps({
     visible: {
         type: Boolean,
@@ -50,52 +55,60 @@ const props = defineProps({
     },
 })
 
+// Define emits
 const emit = defineEmits(['update:visible', 'submit'])
 
+// Reactive references
 const formRef = ref(null)
 const selectedAssetId = ref('')
 const formData = ref({
-    purchaseDate: '',
+    purchase_date: '',
 })
 
+// Handle dialog visibility changes
 const handleVisibilityChange = value => {
     emit('update:visible', value)
 }
 
+// Update purchase date when an asset is selected
 const handleAssetChange = assetId => {
     const selectedAsset = props.assets.find(asset => asset.id === assetId)
     if (selectedAsset) {
-        formData.value.purchaseDate = selectedAsset.purchaseDate ? new Date(selectedAsset.purchaseDate) : new Date()
+        formData.value.purchase_date = selectedAsset.purchase_date ? new Date(selectedAsset.purchase_date) : new Date()
     }
 }
 
+// Reset form fields and close dialog
 const resetForm = () => {
     selectedAssetId.value = ''
-    formData.value.purchaseDate = ''
+    formData.value.purchase_date = ''
     formRef.value?.resetFields()
     close()
 }
 
+// Close dialog
 const close = () => {
     emit('update:visible', false)
 }
 
+// Handle form submission
 const submitForm = () => {
     if (!selectedAssetId.value) {
         ElMessage.warning('Please select an asset')
         return
     }
 
-    if (!formData.value.purchaseDate) {
+    if (!formData.value.purchase_date) {
         ElMessage.warning('Please select a purchase date')
         return
     }
 
     const updatedAsset = {
         id: selectedAssetId.value,
-        purchaseDate: formData.value.purchaseDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        purchase_date: formData.value.purchase_date.toISOString().split('T')[0], // Format as YYYY-MM-DD
     }
 
+    // Emit updated asset data
     emit('submit', updatedAsset)
     resetForm()
 }
@@ -107,3 +120,4 @@ const submitForm = () => {
     justify-content: flex-end;
 }
 </style>
+```

@@ -139,8 +139,8 @@ const handleAssetChange = (assetId) => {
     formData.value = {
       name: selectedAsset.name || '',
       category: selectedAsset.category || '',
-      currentValue: selectedAsset.value || 0,
-      newValue: selectedAsset.value || 0  // Initialize new value to current value as starting point
+      currentValue: parseFloat(selectedAsset.value) || 0,  
+      newValue: parseFloat(selectedAsset.value) || 0       // Initialize new value to current value as starting point
     }
   }
 }
@@ -172,6 +172,11 @@ const resetForm = () => {
 
 // Form submission handler
 const submitForm = () => {
+  const currentVal = parseFloat(formData.value.currentValue) || 0
+  const newVal = parseFloat(formData.value.newValue) || 0
+  console.log('=== FORM SUBMISSION START ===')
+  console.log('Selected Asset ID:', selectedAssetId.value)
+  console.log('Form Data:', formData.value)
   // Validate asset selection
   if (!selectedAssetId.value) {
     ElMessage.warning('Please select an asset')
@@ -179,7 +184,7 @@ const submitForm = () => {
   }
 
   // Ensure the value was actually changed
-  if (formData.value.newValue === formData.value.currentValue) {
+  if (newVal === currentVal) {
     ElMessage.warning('Please change the asset value')
     return
   }
@@ -191,8 +196,10 @@ const submitForm = () => {
   // Using spread operator to maintain all existing properties
   const updatedAsset = {
     ...originalAsset,  // Preserve all original properties
-    value: formData.value.newValue  // Update only the value property
+    value: newVal   // Update only the value property
   }
+  console.log('Updated Asset to Emit:', updatedAsset)
+  console.log('=== EMITTING TO PARENT ===')
 
   // Emit submit event with updated asset to parent component
   emit('submit', updatedAsset)

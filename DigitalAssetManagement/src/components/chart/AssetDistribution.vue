@@ -15,7 +15,7 @@
           @click="selectAllDepartments"
         />
         <el-option
-          v-for="dept in allDepartments"
+          v-for="dept in uniqueDepartments"
           :key="dept"
           :label="dept"
           :value="dept"
@@ -30,23 +30,30 @@
       </el-button>
     </div>
 
-    <!-- Add v-if to ensure chart only renders when data is ready -->
+
     <apexchart
-      v-if="series.length > 0"
+      v-if="series.length > 0 && uniqueDepartments.length > 0"
       type="bar"
       height="300"
       :options="chartOptions"
       :series="series"
     />
+    
+    <div v-else class="no-data-message text-center py-8 text-gray-500">
+      <p>No data available to display chart</p>
+      <el-button @click="debugMode = !debugMode" size="small" type="info">
+        {{ debugMode ? 'Hide' : 'Show' }} Debug Info
+      </el-button>
+    </div>
 
     <EditAssetDept
-  :visible="editModalVisible"
-  @update:visible="val => editModalVisible = val"
-  :departments="allDepartments"
-  :status-options="assetData.statusOptions"
-  :assets="assetData.assets" 
-  @submit="handleAssetUpdate"
-/>
+      :visible="editModalVisible"
+      @update:visible="val => editModalVisible = val"
+      :departments="uniqueDepartments"
+      :status-options="assetData.statusOptions"
+      :assets="assetData.assets" 
+      @submit="handleAssetUpdate"
+    />
   </div>
 </template>
 
@@ -54,6 +61,7 @@
 import { ref, computed } from 'vue'
 import { Edit } from '@element-plus/icons-vue'
 import EditAssetDept from '../modal/EditAssetDept.vue'
+import { ElNotification } from 'element-plus'
 
 const props = defineProps({
   assetData: {
@@ -64,8 +72,32 @@ const props = defineProps({
 
 const emit = defineEmits(['update-asset'])
 
-// Chart data preparation
-const allDepartments = computed(() => props.assetData.departments || [])
+// Debug mode for troubleshooting
+const debugMode = ref(false)
+
+// Get unique departments from assets or departments array
+const uniqueDepartments = computed(() => {
+  // If departments is already an array of unique strings (from API)
+  if (props.assetData.departments && 
+      Array.isArray(props.assetData.departments) && 
+      props.assetData.departments.length > 0 && 
+      typeof props.assetData.departments[0] === 'string') {
+    return props.assetData.departments.filter(dept => dept && dept.trim() !== '');
+  }
+  
+  // Extract unique departments from assets
+  if (props.assetData.assets && Array.isArray(props.assetData.assets)) {
+    const depts = [...new Set(
+      props.assetData.assets
+        .map(asset => asset.department)
+        .filter(dept => dept && dept.trim() !== '')
+    )];
+    return depts.sort();
+  }
+  
+  return [];
+})
+
 const selectedDepartments = ref([])
 
 const selectAllDepartments = () => {
@@ -73,34 +105,43 @@ const selectAllDepartments = () => {
 }
 
 const filteredAssets = computed(() => {
-  if (selectedDepartments.value.length === 0) {
-    return props.assetData.assets || []
+  if (!props.assetData.assets || !Array.isArray(props.assetData.assets)) {
+    return []
   }
-  return (props.assetData.assets || []).filter(asset => 
+  
+  if (selectedDepartments.value.length === 0) {
+    return props.assetData.assets
+  }
+  
+  return props.assetData.assets.filter(asset => 
     selectedDepartments.value.includes(asset.department)
   )
 })
 
-//Defining the series that will be used for the BarChart
 const series = computed(() => {
-  const categories = props.assetData.categories || []
+  // Extract category names from the category objects
+  const categories = props.assetData.categories?.map(cat => cat.name) || []
   const departments = selectedDepartments.value.length > 0 
     ? selectedDepartments.value 
-    : allDepartments.value
+    : uniqueDepartments.value
 
-  return categories.map(category => {
+  if (categories.length === 0 || departments.length === 0) {
+    return []
+  }
+
+  return categories.map(categoryName => {
     return {
-      name: category,
+      name: categoryName,
       data: departments.map(dept => {
-        return filteredAssets.value.filter(asset => 
-          asset.category === category && asset.department === dept
+        const count = filteredAssets.value.filter(asset => 
+          asset.category_name === categoryName && asset.department === dept
         ).length
+        return count
       })
     }
   })
 })
 
- // Prepare BarChart Options
 const chartOptions = computed(() => ({
   chart: {
     type: 'bar',
@@ -127,7 +168,7 @@ const chartOptions = computed(() => ({
   xaxis: {
     categories: selectedDepartments.value.length > 0 
       ? selectedDepartments.value 
-      : allDepartments.value,
+      : uniqueDepartments.value,
     title: {
       text: 'Departments'
     }
@@ -158,30 +199,31 @@ const chartOptions = computed(() => ({
 
 // Edit modal functionality
 const editModalVisible = ref(false)
-const currentAsset = ref({})
-
 
 const openEditModal = () => {
-  currentAsset.value = props.assetData.assets.length > 0 
-    ? {
-        ...props.assetData.assets[0],
-        purchaseDate: props.assetData.assets[0].purchaseDate || new Date()
-      }
-    : {
-        name: 'New Asset',
-        category: props.assetData.categories[0] || '',
-        status: props.assetData.statusOptions[0] || '',
-        usage: '',
-        purchaseDate: new Date(),
-        department: allDepartments.value[0] || '',
-        value: 0
-      }
+  if (!props.assetData.assets || props.assetData.assets.length === 0) {
+    ElNotification({
+      title: 'Warning',
+      message: 'No assets available to edit',
+      type: 'warning'
+    })
+    return
+  }
   editModalVisible.value = true
 }
 
-
-const handleAssetUpdate = (updatedAsset) => {
-  emit('update-asset', updatedAsset)
+const handleAssetUpdate = async (updatedAsset) => {
+  try {
+    await emit('update-asset', updatedAsset)
+    editModalVisible.value = false
+  } catch (error) {
+    console.error('Error updating asset:', error)
+    ElNotification({
+      title: 'Error',
+      message: 'Failed to update asset department',
+      type: 'error'
+    })
+  }
 }
 </script>
 
@@ -196,5 +238,18 @@ const handleAssetUpdate = (updatedAsset) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.debug-info {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.no-data-message {
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 </style>

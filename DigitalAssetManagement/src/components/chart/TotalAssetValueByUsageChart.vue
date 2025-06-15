@@ -1,11 +1,9 @@
 <template>
   <div class="chart-container">
     <h1>Total Asset Value by Usage Type</h1>
-
-    <!-- Edit button -->
     <button @click="showModal = true" class="edit-button">Edit Usage Type</button>
-
-    <!-- ApexChart displaying asset values grouped by usage type -->
+    
+    <!-- ApexChart -->
     <apexchart
       type="pie"
       :options="chartOptions"
@@ -13,85 +11,82 @@
       width="500"
     />
 
-    <!-- Modal component for editing asset usage types -->
-    <div v-if="showModal">
+    <!-- Edit Modal  -->
+    <div v-if="showModal" class="modal-overlay">
       <div class="modal-content">
         <EditUsageType
+          :model-value="showModal"
           :assets="currentAssets"
-          @update="handleAssetUpdate"
-          @close="showModal = false"
+          :categories="categories"
+          :departments="departments"
+          @update:modelValue="showModal = $event"
+          @filter-assets="handleAssetUpdate"
         />
       </div>
     </div>
   </div>
 </template>
 
-<script>
-import { ref, computed } from 'vue'
-import VueApexCharts from 'vue3-apexcharts'
-import { assets } from '../../data/assetData'
-import EditUsageType from '../modal/EditUsageType.vue'
+<script setup>
+import { ref, computed,  onMounted  } from 'vue';
+import VueApexCharts from 'vue3-apexcharts';
+import assetService from '../../api/assetService';
+import EditUsageType from '../modal/EditUsageType.vue';
 
-export default {
-  name: 'AssetValueChart',
-  components: {
-    apexchart: VueApexCharts,
-    EditUsageType
-  },
-  setup() {
-    // Modal visibility state
-    const showModal = ref(false)
+// Modal Control
+const showModal = ref(false);
 
-    // Local reactive copy of the asset list
-    const currentAssets = ref([...assets])
 
-    // Computed map of total value per usage type
-    const usageMap = computed(() => {
-      const map = {}
-      currentAssets.value.forEach(asset => {
-        const usage = asset.usage || 'Unassigned'
-        map[usage] = (map[usage] || 0) + (asset.value || 0)
-      })
-      return map
-    })
+// Category/Department Data
 
-    // Chart series values
-    const series = computed(() => Object.values(usageMap.value))
+const currentAssets = ref([]);
+const categories = ref([]);
+const departments = ref([]);
 
-    // ApexChart options including dynamic labels
-    const chartOptions = computed(() => ({
-      labels: Object.keys(usageMap.value),
-      legend: {
-        position: 'bottom'
-      },
-      responsive: [{
-        breakpoint: 480,
-        options: {
-          chart: {
-            width: 300
-          },
-          legend: {
-            position: 'bottom'
-          }
-        }
-      }]
-    }))
-
-    // Called when modal emits updated asset data
-    const handleAssetUpdate = (updatedAssets) => {
-      currentAssets.value = updatedAssets
-      showModal.value = false
-    }
-
-    return {
-      chartOptions,
-      series,
-      showModal,
-      currentAssets,
-      handleAssetUpdate
-    }
+// Fetch from API when component mounts
+onMounted(async () => {
+  try {
+    currentAssets.value = await assetService.getAssets();
+    console.log('Assets:', currentAssets.value);
+    categories.value = await assetService.getCategories();
+    departments.value = await assetService.getDepartments();
+  } catch (error) {
+    console.error('Error fetching data:', error);
   }
-}
+});
+
+// Chart Calculation
+const usageMap = computed(() => {
+  const map = {};
+  currentAssets.value.forEach(asset => {
+    const usage = asset.usage_type || 'Unassigned';
+    const value = parseFloat(asset.value) || 0; 
+    map[usage] = (map[usage] || 0) + value;
+  });
+  return map;
+});
+
+
+const series = computed(() => Object.values(usageMap.value));
+const chartOptions = computed(() => ({
+  labels: Object.keys(usageMap.value),
+  legend: { position: 'bottom' },
+  responsive: [
+    {
+      breakpoint: 480,
+      options: {
+        chart: { width: 300 },
+        legend: { position: 'bottom' }
+      }
+    }
+  ]
+}));
+
+// Asset Update Callback
+const handleAssetUpdate = (updatedAssets) => {
+  currentAssets.value = updatedAssets;
+  showModal.value = false;
+};
 </script>
 
 <style scoped>

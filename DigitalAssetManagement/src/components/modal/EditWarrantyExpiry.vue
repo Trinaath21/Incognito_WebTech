@@ -240,7 +240,7 @@ const submitForm = () => {
 
   // Emit submit event with updated asset to parent component
   emit('submit', updatedAsset)
-  ElMessage.success('Warranty expiry date updated successfully')
+  
   close()  // Close dialog after successful submission
 }
 

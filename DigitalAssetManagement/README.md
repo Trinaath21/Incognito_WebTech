@@ -1,10 +1,6 @@
 # DigitalAssetManagement
 
-This project is a Digital Asset Management system that includes a dashboard with an overview of the assets as well as 7 charts/tables to monitor 
-the assets. Each charts are equipped with an update functionality that will display a modal where user can make changes to the assets' attributes
-and view the updates in real-time.
-
-# NOTE: cd into the DigitalAssetManagement folder before running the command 
+This template should help get you started developing with Vue 3 in Vite.
 
 ## Recommended IDE Setup
 
@@ -16,16 +12,18 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Project Setup
 
+```sh
 npm install
-
+```
 
 ### Compile and Hot-Reload for Development
 
+```sh
 npm run dev
-
+```
 
 ### Compile and Minify for Production
 
+```sh
 npm run build
-
-
+```

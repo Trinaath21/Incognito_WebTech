@@ -175,20 +175,20 @@
     resetFormData()
   }
   
-  const handleAssetChange = (assetId) => {
-    const selectedAsset = props.assets.find(asset => asset.id === assetId)
-    if (selectedAsset) {
-      formData.value = {
-        name: selectedAsset.name || '',
-        category: selectedAsset.category || '',
-        status: selectedAsset.status || '',
-        usage: selectedAsset.usage || '',
-        purchaseDate: selectedAsset.purchaseDate || new Date(),
-        currentDepartment: currentDepartment.value,
-        newDepartment: currentDepartment.value // Default to current department
-      }
+const handleAssetChange = (assetId) => {
+  const selectedAsset = props.assets.find(asset => asset.id === assetId)
+  if (selectedAsset) {
+    formData.value = {
+      name: selectedAsset.name || '',
+      category: selectedAsset.category_name || '', // Changed from category to category_name
+      status: selectedAsset.status || '',
+      usage: selectedAsset.usage_type || '', // Changed from usage to usage_type
+      purchaseDate: selectedAsset.purchase_date ? new Date(selectedAsset.purchase_date) : new Date(), // Changed from purchaseDate to purchase_date
+      currentDepartment: currentDepartment.value,
+      newDepartment: currentDepartment.value // Default to current department
     }
   }
+}
   
   const resetFormData = () => {
     formData.value = {
